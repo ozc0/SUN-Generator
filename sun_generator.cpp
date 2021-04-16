@@ -1,0 +1,339 @@
+#include <htslib/faidx.h>
+#include <stdio.h>
+#include <string.h>
+#include <getopt.h>
+#include <stdlib.h>
+#include <time.h>
+#include <vector>
+#include <bits/stdc++.h>
+
+using namespace std;
+
+#define ft first
+#define sc second
+#define pii pair<int,int>
+#define vs vector <string>
+#define pss pair<segment,segment>
+#define mp make_pair
+#define pb push_back
+
+struct files_str {
+  char *fasta_file;
+  char *duplication_file;
+  char *output_file;
+} files;
+
+struct segment {
+  string chr;
+  int beg, en, strand;
+  segment ( string chr0, int beg0, int en0, int strand0 ) :chr(chr0), beg(beg0), en(en0), strand(strand0){}
+  segment() {chr = ""; beg = en = strand = 0;}
+  bool operator== ( const segment& r) const {
+    if ( this->chr.compare(r.chr) == 0 && this->beg == r.beg && this->en == r.en && this->strand == r.strand )
+      return true;
+    return false;
+  }
+  bool operator<(  const segment& r ) const {
+    if ( this->chr.compare(r.chr) < 0 )
+      return true;
+    if ( this->chr.compare(r.chr) > 0 )
+      return false;
+    if ( this->beg != r.beg )
+      return this->beg < r.beg;
+    if ( this->en != r.en )
+      return this->en < r.en;
+    return this->strand < r.strand;
+  }
+  segment& operator = (const segment& other) {
+    this->chr = other.chr;
+    this->beg = other.beg;
+    this->en = other.en;
+    this->strand = other.strand;
+    return *this;
+  }
+  
+};
+
+set < segment > all_segments;
+map < segment, vector <segment> > close_segments;
+map < segment, segment > grp;
+vector < pss > pairs;
+
+void print_help () {
+  fprintf(stderr,"To run this program, you need fasta file and duplication file. Also, the output file must be specified in the following format.\n");
+  fprintf(stderr,"\t-f [FASTA file]        : Reference genome in FASTA format\n");
+  fprintf(stderr,"\t-d [duplication file]  : Duplication file file in tab format. (see example file for identation)\n");
+  fprintf(stderr,"\t-o [output file]       : output file\n");
+  fprintf(stderr,"\t-h                     : help option\n");
+  fprintf(stderr,"\nExample usage: ./sun_gen -f example.fasta -d example_duplication.tab -o example.out\n");
+}
+
+void getFileName ( int argc , char** argv ) {
+
+  int opt;
+  bool flag_f = 0, flag_d = 0, flag_o = 0;
+  
+  while ( ( opt = getopt( argc, argv , "f:d:o:h:" ) ) != -1 ) {
+    switch ( opt ) {
+    case 'f':
+      files.fasta_file = optarg;
+      flag_f = 1;
+      break;
+    case 'd':
+      files.duplication_file = optarg;
+      flag_d = 1;
+      break;
+    case 'o':
+      files.output_file = optarg;
+      flag_o = 1;
+      break;
+    case 'h':
+      print_help();
+      exit(0);
+      break;
+    default:
+      fprintf(stderr, "Invalid input type\n");
+      print_help();
+      exit(EXIT_FAILURE);
+      break;
+    }
+  }
+
+  if ( !( flag_f && flag_d && flag_o ) ) {
+    fprintf(stderr,"Missing one of the input/output files.\n");
+    print_help();
+    exit(0);
+  }
+}
+
+vector < pss > readTab();
+
+void readHG ( ) {
+
+  char *ref_seq;
+  faidx_t* ref_fai;
+
+  ref_fai = fai_load (files.fasta_file);
+  fai_destroy ( ref_fai );
+  return;
+
+  for ( int i = 0 ; i < faidx_nseq( ref_fai ) ; i++ ) {
+    
+    const char *name = faidx_iseq(ref_fai,i);
+
+
+    int sqlen = faidx_seq_len ( ref_fai , name );
+    int reallen;
+    char *seq = fai_fetch ( ref_fai , name , &reallen )  ;
+
+    if ( name[3] == 'X' || name[3] == 'Y' || name[3] == 'M' ) {
+      printf(">%s\n",name);
+      for ( int j = 0 ; j < reallen ; j++ ) {
+	if (  j%50 == 0 && j != 0 )
+	  puts("");
+	printf("%c",seq[j]);
+      }
+      puts("");
+    }
+    
+    else {
+      printf(">%sp1\n",name);
+      for ( int j = 0 ; j < reallen ; j++ ) {
+	if (  j%50 == 0 && j != 0 )
+	  puts("");
+	printf("%c",seq[j]);
+      }
+      puts("");
+
+      printf(">%sp2\n",name);
+      for ( int j = 0 ; j < reallen ; j++ ) {
+	if (  j%50 == 0 && j != 0 )
+	  puts("");
+	printf("%c",seq[j]);
+      }
+      puts("");
+    }
+    
+    free ( seq );
+  }
+
+  FILE *save;
+  save = fopen("places_of_duplicates.tab","w");
+  fprintf(save,"chr\tchrStart\tchrEnd\tidOfDupl\tnewChr\tindexInNewChr\tstrand\tisReversed\n");
+  
+  vector < pss > dupl = readTab ();
+  map < int , bool > used;
+  vector < char > rnd1, rnd2;
+
+  for ( int i = 0 ; i < 10000 ; i++ ) {
+    rnd1.pb ( 'N' );
+    rnd2.pb ( 'N' );;
+  }
+
+  const int MAXX = (int) 2e9;
+  /*
+  for ( int i = 0 ; i < dupl.size() ; i++ ) {
+
+    if ( rnd1.size() > MAXX || rnd2.size() > MAXX ) break;
+    if ( dupl[i][0].size() > 5 || dupl[i][6].size() > 5 ) continue;
+    
+    vector < string > cur = dupl[i];
+    int len, len2, len3, id;
+    
+    id = atoi ( cur[10].c_str() );
+    if ( used[id] == true ) continue;
+    used[id] = true;
+    
+    char *seq = faidx_fetch_seq ( ref_fai , cur[0].c_str() , atoi(cur[1].c_str()), atoi(cur[2].c_str()),  &len );
+    char *seq2 = faidx_fetch_seq ( ref_fai , cur[6].c_str() , atoi(cur[7].c_str()), atoi(cur[8].c_str()),  &len2 );
+    char *seq3 = faidx_fetch_seq ( ref_fai , cur[0].c_str() , atoi(cur[1].c_str()), atoi(cur[2].c_str()),  &len3 );
+
+    for ( int j = 0 ; j < len3 ; j++ )
+      seq3[j] = toupper ( seq3[j] );
+    for ( int j = 0 ; j < len3/2 ; j++ ) {
+      char tmpp = seq3[j];
+      seq3[j] = seq3[len3-j-1];
+      seq3[len3-j-1] = tmpp;
+    }
+    for ( int j = 0 ; j < len3 ; j++ ) {
+      if ( seq3[j] == 'N' ) continue;
+      if ( seq3[j] == 'A' ) seq3[j] = 'T';
+      else if ( seq3[j] == 'T' ) seq3[j] = 'A';
+      else if ( seq3[j] == 'G' ) seq3[j] = 'C';
+      else if ( seq3[j] == 'C' ) seq3[j] = 'G';
+    }
+
+    int chc = rand()%6;
+    if ( chc == 5 ) {
+      if ( rnd1.size() <= rnd2.size() ) {
+	fprintf(save,"%s\t%d\t%d\t%d\tchrRn1\t%d\t%s\t+\n",cur[0].c_str(),atoi(cur[1].c_str()), atoi(cur[2].c_str()),id,(int)rnd1.size(),cur[5].c_str());
+	for ( int j = 0 ; j < len3 ; j++ )
+	  rnd1.pb ( seq3[j] );
+      }
+      else {
+	fprintf(save,"%s\t%d\t%d\t%d\tchrRn2\t%d\t%s\t+\n",cur[0].c_str(),atoi(cur[1].c_str()), atoi(cur[2].c_str()),id,(int)rnd2.size(),cur[5].c_str());
+	for ( int j = 0 ; j < len3 ; j++ )
+	  rnd2.pb ( seq3[j] );
+      }
+    }
+    if ( chc == 0  || chc == 3 || chc == 4 ) {
+      fprintf(save,"%s\t%d\t%d\t%d\tchrRn1\t%d\t%s\t-\n",cur[0].c_str(),atoi(cur[1].c_str()), atoi(cur[2].c_str()),id,(int)rnd1.size(),cur[5].c_str());
+      fprintf(save,"%s\t%d\t%d\t%d\tchrRn2\t%d\t%s\t-\n",cur[6].c_str(),atoi(cur[7].c_str()), atoi(cur[8].c_str()),id,(int)rnd2.size(),cur[5].c_str());
+      for ( int j = 0 ; j < len ; j++ )
+	rnd1.pb ( seq[j] );
+      for ( int j = 0 ; j < len2 ; j++ )
+	rnd2.pb ( seq2[j] );
+    }
+    if ( chc == 1 ) {
+      if ( rnd1.size() <= rnd2.size() ) {
+	fprintf(save,"%s\t%d\t%d\t%d\tchrRn1\t%d\t%s\t-\n",cur[0].c_str(),atoi(cur[1].c_str()), atoi(cur[2].c_str()),id,(int)rnd1.size(),cur[5].c_str());
+	for ( int j = 0 ; j < len ; j++ )
+	  rnd1.pb ( seq[j] );
+      }
+      else {
+	fprintf(save,"%s\t%d\t%d\t%d\tchrRn2\t%d\t%s\t-\n",cur[0].c_str(),atoi(cur[1].c_str()), atoi(cur[2].c_str()),id,(int)rnd2.size(),cur[5].c_str());
+	for ( int j = 0 ; j < len ; j++ )
+	  rnd2.pb ( seq[j] );
+      }
+    }
+    if ( chc == 2 ) {
+      if ( rnd2.size() <= rnd1.size() ) {
+	fprintf(save,"%s\t%d\t%d\t%d\tchrRn2\t%d\t%s\t-\n",cur[6].c_str(),atoi(cur[7].c_str()), atoi(cur[8].c_str()),id,(int)rnd2.size(),cur[5].c_str());
+	for ( int j = 0 ; j < len2 ; j++ )
+	  rnd2.pb ( seq2[j] );
+      }
+      else {
+	fprintf(save,"%s\t%d\t%d\t%d\tchrRn1\t%d\t%s\t-\n",cur[6].c_str(),atoi(cur[7].c_str()), atoi(cur[8].c_str()),id,(int)rnd1.size(),cur[5].c_str());
+	for ( int j = 0 ; j < len2 ; j++ )
+	  rnd1.pb ( seq2[j] );
+      }
+    }
+    
+    free ( seq );
+    free ( seq2 );
+    free ( seq3 );
+  }
+  */
+  fclose( save );
+
+  for ( int i = 0 ; i < 10000 ; i++ ) {
+    rnd1.pb ( 'N' );
+    rnd2.pb ( 'N' );
+  }
+  
+  printf(">chrRn1\n");
+  for ( int i = 0 ; i < rnd1.size() ; i++ ) {
+    if ( i % 50 == 0 && i ) puts("");
+    printf("%c",rnd1[i]);
+  }
+  puts("");
+
+  printf(">chrRn2\n");
+  for ( int i = 0 ; i < rnd2.size() ; i++ ) {
+    if ( i % 50 == 0 && i ) puts("");
+    printf("%c",rnd2[i]);
+  }
+  puts("");
+  
+  fai_destroy ( ref_fai );
+
+}
+
+int main( int argc, char** argv ) {
+  srand( time (NULL) );
+  getFileName ( argc, argv );
+  pairs = readTab();
+  readHG();
+}
+
+vector < pss > readTab () {
+
+  vector < pss > ret;
+  ifstream file(files.duplication_file);
+  
+  if (file.is_open()) {
+    
+    string line;
+    while (getline(file, line)) {
+
+      vector < string > words;
+      int st,en,i = -1;
+
+      while ( i != line.size() ) {
+	string tmp;
+	for ( i++ ; i != line.size() ; i++ ) {
+	  if ( line[i] == '\t' || line[i] == ' ' || line[i] == '\n' ) break;
+	  tmp += line[i];
+	}
+	words.pb ( tmp );
+      }
+
+      int strand1 = 0, strand2 = 0;
+      if ( words[8].compare("+") == 0 )
+	strand1 = 1;
+      if ( words[8].compare("-") == 0 )
+	strand1 = 2;
+
+      if ( words[9].compare("+") == 0 )
+	strand2 = 1;
+      if ( words[9].compare("-") == 0 )
+	strand2 = 2;
+      segment tmp1 (words[0],stoi(words[1]),stoi(words[2]),strand1);
+      segment tmp2 (words[3],stoi(words[4]),stoi(words[5]),strand2);
+      ret.pb ( make_pair(tmp1, tmp2) );
+      all_segments.insert (tmp1);
+      all_segments.insert (tmp2);
+      grp[tmp1] = tmp1;
+      grp[tmp2] = tmp2;
+      
+    }
+    
+    file.close();
+  }
+  else {
+    fprintf(stderr,"Unable to open file %s. Make sure the system has read permition on this file and run the program again.\n",files.duplication_file);
+    exit(0);
+  }
+
+  return ret;
+}
