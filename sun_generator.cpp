@@ -54,10 +54,12 @@ struct segment {
   
 };
 
-set < segment > all_segments, super_segments;
+set < segment > all_segments, super_segments, suns;
 map < segment, vector <segment> > close_segments;
+map < segment, set < segment > > group_members;
 map < segment, segment > grp;
 vector < pss > pairs;
+long long int cnt = 0;
 
 void print_help () {
   fprintf(stderr,"To run this program, you need fasta file and duplication file. Also, the output file must be specified in the following format.\n");
@@ -292,14 +294,17 @@ void find_groups () {
 		grp[ grp[pairs[i].second] ] = grp[pairs[i].first];
 	}
 
-	for ( auto i: grp )
+	for ( auto i: grp ) {
 		super_segments.insert ( i.second );
+		group_members[i.second].insert ( i.first );
+	}
 }
 
 int main( int argc, char** argv ) {
   srand( time (NULL) );
   getFileName ( argc, argv );
   pairs = readTab();
+  return 0;
   find_groups();
   readHG();
 }
@@ -343,7 +348,19 @@ vector < pss > readTab () {
       all_segments.insert (tmp2);
       grp[tmp1] = tmp1;
       grp[tmp2] = tmp2;
-      
+
+      cnt += stoi(words[2]) - stoi(words[1])+1;
+      cnt += stoi(words[5]) - stoi(words[4])+1;
+/*
+      for ( int j = stoi(words[1]) ; j <= stoi(words[2]) ; j++ ) {
+      	segment nucl ( words[0], j, j, 0 );
+      	suns.insert ( nucl );
+      }
+      for ( int j = stoi(words[4]) ; j <= stoi(words[5]) ; j++ ) {
+      	segment nucl ( words[3], j, j, 0 );
+      	suns.insert ( nucl );
+      }
+      */
     }
     
     file.close();
@@ -353,5 +370,6 @@ vector < pss > readTab () {
     exit(0);
   }
 
+  fprintf(stderr,"cnt = %lld\n",cnt);
   return ret;
 }
