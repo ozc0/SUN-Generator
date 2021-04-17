@@ -54,7 +54,7 @@ struct segment {
   
 };
 
-set < segment > all_segments;
+set < segment > all_segments, super_segments;
 map < segment, vector <segment> > close_segments;
 map < segment, segment > grp;
 vector < pss > pairs;
@@ -279,10 +279,28 @@ void readHG ( ) {
 
 }
 
+segment current_grp ( segment cur ) {
+	if ( grp[cur] == cur )
+		return cur;
+	return grp[cur] = current_grp ( grp[cur] );
+}
+
+void find_groups () {
+	for ( int i = 0 ; i < pairs.size() ; i++ ) {
+		if ( current_grp ( pairs[i].first ) == current_grp ( pairs[i].second ) )
+			continue;
+		grp[ grp[pairs[i].second] ] = grp[pairs[i].first];
+	}
+
+	for ( auto i: grp )
+		super_segments.insert ( i.second );
+}
+
 int main( int argc, char** argv ) {
   srand( time (NULL) );
   getFileName ( argc, argv );
   pairs = readTab();
+  find_groups();
   readHG();
 }
 
