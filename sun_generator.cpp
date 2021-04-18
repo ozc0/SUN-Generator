@@ -54,12 +54,17 @@ struct segment {
   
 };
 
+struct similar {
+	segment seg1, seg2;
+	int after_first, len;
+};
+
 set < segment > all_segments, super_segments, suns;
 map < segment, vector <segment> > close_segments;
 map < segment, set < segment > > group_members;
 map < segment, segment > grp;
 vector < pss > pairs;
-long long int cnt = 0;
+vector < similar > similars;
 
 void print_help () {
   fprintf(stderr,"To run this program, you need fasta file and duplication file. Also, the output file must be specified in the following format.\n");
@@ -300,12 +305,32 @@ void find_groups () {
 	}
 }
 
+void find_variations () {
+	set < segment > :: iterator it, it2;
+	for ( it = all_segments.begin() ; it != all_segments.end() ; it++ ) {
+		it2 = it;
+		it2++;
+		for ( ; it2 != all_segments.end() ; it++ ) {
+			if ( it2->chr.compare(it->chr) != 0 || (it2->beg) > (it->en) )
+				break;
+			int aft = (it2->beg) - (it->beg);
+			int lenn = min( it2->en, it->en ) - (it2->beg) + 1;
+			similar tmp;
+			tmp.seg1 = *it;
+			tmp.seg2 = *it2;
+			tmp.after_first = aft;
+			tmp.len = lenn;
+			similars.push_back ( make_pair (tmp) );
+		}
+	}
+}
+
 int main( int argc, char** argv ) {
   srand( time (NULL) );
   getFileName ( argc, argv );
   pairs = readTab();
-  return 0;
   find_groups();
+  find_variations();
   readHG();
 }
 
@@ -349,9 +374,6 @@ vector < pss > readTab () {
       grp[tmp1] = tmp1;
       grp[tmp2] = tmp2;
 
-      cnt += stoi(words[2]) - stoi(words[1])+1;
-      cnt += stoi(words[5]) - stoi(words[4])+1;
-/*
       for ( int j = stoi(words[1]) ; j <= stoi(words[2]) ; j++ ) {
       	segment nucl ( words[0], j, j, 0 );
       	suns.insert ( nucl );
@@ -360,7 +382,6 @@ vector < pss > readTab () {
       	segment nucl ( words[3], j, j, 0 );
       	suns.insert ( nucl );
       }
-      */
     }
     
     file.close();
@@ -370,6 +391,5 @@ vector < pss > readTab () {
     exit(0);
   }
 
-  fprintf(stderr,"cnt = %lld\n",cnt);
   return ret;
 }
