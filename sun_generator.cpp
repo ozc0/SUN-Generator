@@ -185,7 +185,7 @@ void compare ( segment seg1, segment seg2, int aft, int len ) {
 
 
   // STRAAAAAAAAAAAANNNNNNNNNDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
-  for ( int i = 0 ; i < min (len_of_first, len_of_second) )
+  for ( int i = 0 ; i < min (len_of_first, len_of_second) ; i++ )
  		if ( seq[i] == seq2[i] ) { // STRANDLA ALAKALI BISILER EKSIKKKKKKKK!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  			set < segment > :: iterator it;
  			segment tmp ( seg1.chr, seg1.beg + aft + i , seg1.beg + aft + i, 0 );
