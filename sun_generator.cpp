@@ -66,6 +66,10 @@ map < segment, segment > grp;
 vector < pss > pairs;
 vector < similar > similars;
 
+faidx_t* ref_fai;
+FILE *save;
+int uneven_cnt;
+
 void print_help () {
   fprintf(stderr,"To run this program, you need fasta file and duplication file. Also, the output file must be specified in the following format.\n");
   fprintf(stderr,"\t-f [FASTA file]        : Reference genome in FASTA format\n");
@@ -75,7 +79,7 @@ void print_help () {
   fprintf(stderr,"\nExample usage: ./sun_gen -f example.fasta -d example_duplication.tab -o example.out\n");
 }
 
-void getFileName ( int argc , char** argv ) {
+void get_file_name ( int argc , char** argv ) {
 
   int opt;
   bool flag_f = 0, flag_d = 0, flag_o = 0;
@@ -113,71 +117,92 @@ void getFileName ( int argc , char** argv ) {
   }
 }
 
-vector < pss > readTab();
+vector < pss > read_tab();
 
-void readHG ( ) {
+void compare ( segment seg1, segment seg2, int aft, int len ) {
 
   char *ref_seq;
-  faidx_t* ref_fai;
 
-  ref_fai = fai_load (files.fasta_file);
-  fai_destroy ( ref_fai );
-  return;
-
-  for ( int i = 0 ; i < faidx_nseq( ref_fai ) ; i++ ) {
+  // for ( int i = 0 ; i < faidx_nseq( ref_fai ) ; i++ ) {
     
-    const char *name = faidx_iseq(ref_fai,i);
+  //   const char *name = faidx_iseq(ref_fai,i);
 
 
-    int sqlen = faidx_seq_len ( ref_fai , name );
-    int reallen;
-    char *seq = fai_fetch ( ref_fai , name , &reallen )  ;
+  //   int sqlen = faidx_seq_len ( ref_fai , name );
+  //   int reallen;
+  //   char *seq = fai_fetch ( ref_fai , name , &reallen )  ;
 
-    if ( name[3] == 'X' || name[3] == 'Y' || name[3] == 'M' ) {
-      printf(">%s\n",name);
-      for ( int j = 0 ; j < reallen ; j++ ) {
-	if (  j%50 == 0 && j != 0 )
-	  puts("");
-	printf("%c",seq[j]);
-      }
-      puts("");
-    }
+  //   if ( name[3] == 'X' || name[3] == 'Y' || name[3] == 'M' ) {
+  //     printf(">%s\n",name);
+  //     for ( int j = 0 ; j < reallen ; j++ ) {
+		// 		if (  j%50 == 0 && j != 0 )
+	 //  			puts("");
+		// 		printf("%c",seq[j]);
+  //     }
+  //     puts("");
+  //   }
     
-    else {
-      printf(">%sp1\n",name);
-      for ( int j = 0 ; j < reallen ; j++ ) {
-	if (  j%50 == 0 && j != 0 )
-	  puts("");
-	printf("%c",seq[j]);
-      }
-      puts("");
+  //   else {
+  //     printf(">%sp1\n",name);
+  //     for ( int j = 0 ; j < reallen ; j++ ) {
+		// 		if (  j%50 == 0 && j != 0 )
+		// 		  puts("");
+		// 		printf("%c",seq[j]);
+  //     }
+  //     puts("");
 
-      printf(">%sp2\n",name);
-      for ( int j = 0 ; j < reallen ; j++ ) {
-	if (  j%50 == 0 && j != 0 )
-	  puts("");
-	printf("%c",seq[j]);
-      }
-      puts("");
-    }
+  //     printf(">%sp2\n",name);
+  //     for ( int j = 0 ; j < reallen ; j++ ) {
+		// 		if (  j%50 == 0 && j != 0 )
+	 //  			puts("");
+		// 		printf("%c",seq[j]);
+  //     }
+  //     puts("");
+  //   }
     
-    free ( seq );
-  }
+  //   free ( seq );
+  // }
 
-  FILE *save;
-  save = fopen("places_of_duplicates.tab","w");
-  fprintf(save,"chr\tchrStart\tchrEnd\tidOfDupl\tnewChr\tindexInNewChr\tstrand\tisReversed\n");
   
-  vector < pss > dupl = readTab ();
-  map < int , bool > used;
-  vector < char > rnd1, rnd2;
+  
+  // fprintf(save,"chr\tchrStart\tchrEnd\tidOfDupl\tnewChr\tindexInNewChr\tstrand\tisReversed\n");
+  
+  // vector < pss > dupl = read_tab ();
+  // map < int , bool > used;
+  // vector < char > rnd1, rnd2;
 
-  for ( int i = 0 ; i < 10000 ; i++ ) {
-    rnd1.pb ( 'N' );
-    rnd2.pb ( 'N' );;
-  }
+  // for ( int i = 0 ; i < 10000 ; i++ ) {
+  //   rnd1.pb ( 'N' );
+  //   rnd2.pb ( 'N' );;
+  // }
 
-  const int MAXX = (int) 2e9;
+  int len_of_first, len_of_second;
+  char *seq = faidx_fetch_seq ( ref_fai, seg1.chr.c_str(), seg1.beg + aft, seg1.beg + aft+len-1, &len_of_first );
+  char *seq2 = faidx_fetch_seq ( ref_fai, seg2.chr.c_str(), seg2.beg, seg2.beg+len-1, &len_of_second );
+
+  if ( len_of_first != len_of_second )
+  	uneven_cnt++;
+
+
+  // STRAAAAAAAAAAAANNNNNNNNNDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
+  for ( int i = 0 ; i < min (len_of_first, len_of_second) )
+ 		if ( seq[i] == seq2[i] ) { // STRANDLA ALAKALI BISILER EKSIKKKKKKKK!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ 			set < segment > :: iterator it;
+ 			segment tmp ( seg1.chr, seg1.beg + aft + i , seg1.beg + aft + i, 0 );
+ 			it = suns.find ( tmp );
+ 			if ( it != suns.end() )
+ 				suns.erase (it);
+
+ 			segment tmp2 ( seg2.chr, seg2.beg + i , seg2.beg + i, 0 );
+ 			it = suns.find ( tmp2 );
+ 			if ( it != suns.end() )
+ 				suns.erase (it);
+ 		}
+
+  free (seq);
+  free (seq2);
+
+  // const int MAXX = (int) 2e9;
   /*
   for ( int i = 0 ; i < dupl.size() ; i++ ) {
 
@@ -261,29 +286,8 @@ void readHG ( ) {
     free ( seq3 );
   }
   */
-  fclose( save );
-
-  for ( int i = 0 ; i < 10000 ; i++ ) {
-    rnd1.pb ( 'N' );
-    rnd2.pb ( 'N' );
-  }
   
-  printf(">chrRn1\n");
-  for ( int i = 0 ; i < rnd1.size() ; i++ ) {
-    if ( i % 50 == 0 && i ) puts("");
-    printf("%c",rnd1[i]);
-  }
-  puts("");
-
-  printf(">chrRn2\n");
-  for ( int i = 0 ; i < rnd2.size() ; i++ ) {
-    if ( i % 50 == 0 && i ) puts("");
-    printf("%c",rnd2[i]);
-  }
-  puts("");
   
-  fai_destroy ( ref_fai );
-
 }
 
 segment current_grp ( segment cur ) {
@@ -320,21 +324,71 @@ void find_variations () {
 			tmp.seg2 = *it2;
 			tmp.after_first = aft;
 			tmp.len = lenn;
-			similars.push_back ( make_pair (tmp) );
+			similars.push_back ( tmp );
 		}
 	}
 }
 
-int main( int argc, char** argv ) {
-  srand( time (NULL) );
-  getFileName ( argc, argv );
-  pairs = readTab();
-  find_groups();
-  find_variations();
-  readHG();
+void find_suns () {
+
+	fprintf(stderr,"Before deleting any, sun size = %d\n",(int)suns.size());
+
+	for ( auto i: group_members ) {
+		set < segment > &cur_grp = i.second;
+		set < segment > :: iterator it, it2;
+
+		for ( it = cur_grp.begin() ; it != cur_grp.end() ; it++ ) {
+			it2 = it;
+			it2++;
+			while ( it2 != cur_grp.end() ) {
+				compare ( *it, *it2, 0, min ( (it->en) - (it->beg) + 1, (it2->en) - (it2->beg) + 1 ) );
+				it2++;
+			}
+		}
+	}
+
+	fprintf(stderr,"After deleting inter-groups, sun size = %d\n",(int)suns.size());
+
+	for ( int i = 0 ; i < similars.size () ; i++ ) {
+		similar &tmp = similars[i];
+
+		segment sup1 = current_grp (tmp.seg1), sup2 = current_grp (tmp.seg2);
+		set < segment > &grp1 = group_members[sup1];
+		set < segment > &grp2 = group_members[sup2];
+		set < segment > :: iterator it, it2;
+
+		for ( it = grp1.begin() ; it != grp1.end() ; it++ ) {
+			for ( it2 = grp2.begin() ; it2 != grp2.end() ; it2++ )
+				compare ( *it, *it2, tmp.after_first, tmp.len );
+		}
+
+	}
+
+	fprintf(stderr,"After deleting variations, sun size = %d\n",(int)suns.size());
+	fprintf(stderr,"fai_fetch uneven length count = %d\n",uneven_cnt);
 }
 
-vector < pss > readTab () {
+int main( int argc, char** argv ) {
+
+  srand( time (NULL) );
+  get_file_name ( argc, argv );
+  pairs = read_tab();
+
+  find_groups();
+  find_variations();
+
+  ref_fai = fai_load (files.fasta_file);
+  save = fopen(files.output_file,"w");
+  find_suns ();
+  fai_destroy ( ref_fai );
+
+  // STRAND HALLEDIP, PRINTLEME KALDI
+
+  fclose( save );
+  return 0;
+}
+
+vector < pss > read_tab () {
 
   vector < pss > ret;
   ifstream file(files.duplication_file);
@@ -348,24 +402,24 @@ vector < pss > readTab () {
       int st,en,i = -1;
 
       while ( i != line.size() ) {
-	string tmp;
-	for ( i++ ; i != line.size() ; i++ ) {
-	  if ( line[i] == '\t' || line[i] == ' ' || line[i] == '\n' ) break;
-	  tmp += line[i];
-	}
-	words.pb ( tmp );
+				string tmp;
+				for ( i++ ; i != line.size() ; i++ ) {
+				  if ( line[i] == '\t' || line[i] == ' ' || line[i] == '\n' ) break;
+				  tmp += line[i];
+				}
+				words.pb ( tmp );
       }
 
       int strand1 = 0, strand2 = 0;
       if ( words[8].compare("+") == 0 )
-	strand1 = 1;
+				strand1 = 1;
       if ( words[8].compare("-") == 0 )
-	strand1 = 2;
+				strand1 = 2;
 
       if ( words[9].compare("+") == 0 )
-	strand2 = 1;
+				strand2 = 1;
       if ( words[9].compare("-") == 0 )
-	strand2 = 2;
+				strand2 = 2;
       segment tmp1 (words[0],stoi(words[1]),stoi(words[2]),strand1);
       segment tmp2 (words[3],stoi(words[4]),stoi(words[5]),strand2);
       ret.pb ( make_pair(tmp1, tmp2) );
