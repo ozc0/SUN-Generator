@@ -320,7 +320,7 @@ void find_variations () {
 			tmp.seg2 = *it2;
 			tmp.after_first = aft;
 			tmp.len = lenn;
-			similars.push_back ( make_pair (tmp) );
+			similars.push_back ( tmp );
 		}
 	}
 }
