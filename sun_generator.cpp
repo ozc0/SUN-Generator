@@ -119,6 +119,8 @@ void get_file_name ( int argc , char** argv ) {
 
 vector < pss > read_tab();
 
+int strand_test = 0;
+
 void compare ( segment seg1, segment seg2, int aft, int len ) {
 
   char *ref_seq;
@@ -182,6 +184,19 @@ void compare ( segment seg1, segment seg2, int aft, int len ) {
 
   if ( len_of_first != len_of_second )
   	uneven_cnt++;
+
+  if ( seg1.strand == 2 || seg2.strand == 2 ) {
+  	strand_test++;
+  	if ( strand_test <= 10 ) {
+  		fprintf(stderr,"%d ",seg1.strand);
+  		for ( int i = 0 ; i <= min ( 20, len_of_first ) ; i++ )
+  			printf("%c",seq[i]);
+  		fprintf(stderr,"\n%d ",seg2.strand);
+  		for ( int i = 0 ; i <= min ( 20, len_of_second ) ; i++ )
+  			printf("%c",seq2[i]);
+  		fprintf(stderr,"\n\n");
+  	}
+  }
 
 
   // STRAAAAAAAAAAAANNNNNNNNNDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
@@ -314,7 +329,7 @@ void find_variations () {
 	for ( it = all_segments.begin() ; it != all_segments.end() ; it++ ) {
 		it2 = it;
 		it2++;
-		for ( ; it2 != all_segments.end() ; it++ ) {
+		for ( ; it2 != all_segments.end() ; it2++ ) {
 			if ( it2->chr.compare(it->chr) != 0 || (it2->beg) > (it->en) )
 				break;
 			int aft = (it2->beg) - (it->beg);
