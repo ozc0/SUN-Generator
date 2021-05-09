@@ -119,7 +119,7 @@ void get_file_name ( int argc , char** argv ) {
 
 vector < pss > read_tab();
 
-int strand_test = 0;
+int strand_test = 0, debugint = 0;
 
 void compare ( segment seg1, segment seg2, int aft, int len ) {
 
@@ -182,23 +182,42 @@ void compare ( segment seg1, segment seg2, int aft, int len ) {
   char *seq = faidx_fetch_seq ( ref_fai, seg1.chr.c_str(), seg1.beg + aft, seg1.beg + aft+len-1, &len_of_first );
   char *seq2 = faidx_fetch_seq ( ref_fai, seg2.chr.c_str(), seg2.beg, seg2.beg+len-1, &len_of_second );
 
+  //  char *seq = faidx_fetch_seq ( ref_fai, seg1.chr.c_str(), seg1.beg, seg1.en, &len_of_first );
+  //char *seq2 = faidx_fetch_seq ( ref_fai, seg2.chr.c_str(), seg2.beg, seg2.en, &len_of_second );
+
   if ( len_of_first != len_of_second )
   	uneven_cnt++;
 
+  /*debugint++;
+  if ( debugint <= 10 ) {
+    fprintf(stderr,"##1st %s %d %d %d\n",seg1.chr.c_str(),seg1.beg,seg1.en,seg1.strand);
+    fprintf(stderr,"##2nd %s %d %d %d\n",seg2.chr.c_str(),seg2.beg,seg2.en,seg2.strand);
+    for (  int i = 0 ; i <= 10 ; i++)
+      fprintf(stderr,"%c",seq[i]);
+    fprintf(stderr,"\n");
+    for (  int i = 0 ; i <= 10 ; i++)
+      fprintf(stderr,"%c",seq2[i]);
+    fprintf(stderr,"\n\n");    
+  }
+  
+
   if ( seg1.strand == 2 || seg2.strand == 2 ) {
+
   	strand_test++;
-  	if ( strand_test <= 10 ) {
+  	if ( strand_test <= 15 ) {
+	  fprintf(stderr,"strand 1st %s %d %d %d\n",seg1.chr.c_str(),seg1.beg,seg1.en,seg1.strand);
+	  fprintf(stderr,"strand 2nd %s %d %d %d\n",seg2.chr.c_str(),seg2.beg,seg2.en,seg2.strand);
   		fprintf(stderr,"%d ",seg1.strand);
   		for ( int i = 0 ; i <= min ( 20, len_of_first ) ; i++ )
-  			printf("%c",seq[i]);
+		  fprintf(stderr,"%c",seq[i]);
   		fprintf(stderr,"\n%d ",seg2.strand);
-  		for ( int i = 0 ; i <= min ( 20, len_of_second ) ; i++ )
-  			printf("%c",seq2[i]);
+  		for ( int i = 0 ; i <= min (20, len_of_second) ; i++ )
+		  fprintf(stderr,"%c",seq2[i]);
   		fprintf(stderr,"\n\n");
   	}
   }
-
-
+  */
+  
   // STRAAAAAAAAAAAANNNNNNNNNDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
   for ( int i = 0 ; i < min (len_of_first, len_of_second) ; i++ )
  		if ( seq[i] == seq2[i] ) { // STRANDLA ALAKALI BISILER EKSIKKKKKKKK!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -383,21 +402,36 @@ void find_suns () {
 	fprintf(stderr,"fai_fetch uneven length count = %d\n",uneven_cnt);
 }
 
+void print_suns () {
+
+}
+
 int main( int argc, char** argv ) {
 
   srand( time (NULL) );
   get_file_name ( argc, argv );
+  
+  fprintf(stderr,"#1 Reading files\n");
   pairs = read_tab();
+  fprintf(stderr,"Read files\n");
 
+  fprintf(stderr,"#2 Finding groups\n");
   find_groups();
+  fprintf(stderr,"Found groups\n");
+
+  fprintf(stderr,"#3 Finding variations\n");
   find_variations();
+  fprintf(stderr,"Found variations\n");
 
   ref_fai = fai_load (files.fasta_file);
   save = fopen(files.output_file,"w");
+
+  fprintf(stderr,"#4 Finding suns\n");
   find_suns ();
   fai_destroy ( ref_fai );
 
   // STRAND HALLEDIP, PRINTLEME KALDI
+  print_suns();
 
   fclose( save );
   return 0;
@@ -437,6 +471,7 @@ vector < pss > read_tab () {
 				strand2 = 2;
       segment tmp1 (words[0],stoi(words[1]),stoi(words[2]),strand1);
       segment tmp2 (words[3],stoi(words[4]),stoi(words[5]),strand2);
+
       ret.pb ( make_pair(tmp1, tmp2) );
       all_segments.insert (tmp1);
       all_segments.insert (tmp2);
