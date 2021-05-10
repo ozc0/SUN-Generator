@@ -125,102 +125,15 @@ void compare ( segment seg1, segment seg2, int aft, int len ) {
 
   char *ref_seq;
 
-  // for ( int i = 0 ; i < faidx_nseq( ref_fai ) ; i++ ) {
-    
-  //   const char *name = faidx_iseq(ref_fai,i);
-
-
-  //   int sqlen = faidx_seq_len ( ref_fai , name );
-  //   int reallen;
-  //   char *seq = fai_fetch ( ref_fai , name , &reallen )  ;
-
-  //   if ( name[3] == 'X' || name[3] == 'Y' || name[3] == 'M' ) {
-  //     printf(">%s\n",name);
-  //     for ( int j = 0 ; j < reallen ; j++ ) {
-		// 		if (  j%50 == 0 && j != 0 )
-	 //  			puts("");
-		// 		printf("%c",seq[j]);
-  //     }
-  //     puts("");
-  //   }
-    
-  //   else {
-  //     printf(">%sp1\n",name);
-  //     for ( int j = 0 ; j < reallen ; j++ ) {
-		// 		if (  j%50 == 0 && j != 0 )
-		// 		  puts("");
-		// 		printf("%c",seq[j]);
-  //     }
-  //     puts("");
-
-  //     printf(">%sp2\n",name);
-  //     for ( int j = 0 ; j < reallen ; j++ ) {
-		// 		if (  j%50 == 0 && j != 0 )
-	 //  			puts("");
-		// 		printf("%c",seq[j]);
-  //     }
-  //     puts("");
-  //   }
-    
-  //   free ( seq );
-  // }
-
-  
-  
-  // fprintf(save,"chr\tchrStart\tchrEnd\tidOfDupl\tnewChr\tindexInNewChr\tstrand\tisReversed\n");
-  
-  // vector < pss > dupl = read_tab ();
-  // map < int , bool > used;
-  // vector < char > rnd1, rnd2;
-
-  // for ( int i = 0 ; i < 10000 ; i++ ) {
-  //   rnd1.pb ( 'N' );
-  //   rnd2.pb ( 'N' );;
-  // }
-
   int len_of_first, len_of_second;
   char *seq = faidx_fetch_seq ( ref_fai, seg1.chr.c_str(), seg1.beg + aft, seg1.beg + aft+len-1, &len_of_first );
   char *seq2 = faidx_fetch_seq ( ref_fai, seg2.chr.c_str(), seg2.beg, seg2.beg+len-1, &len_of_second );
 
-  //  char *seq = faidx_fetch_seq ( ref_fai, seg1.chr.c_str(), seg1.beg, seg1.en, &len_of_first );
-  //char *seq2 = faidx_fetch_seq ( ref_fai, seg2.chr.c_str(), seg2.beg, seg2.en, &len_of_second );
-
   if ( len_of_first != len_of_second )
   	uneven_cnt++;
-
-  /*debugint++;
-  if ( debugint <= 10 ) {
-    fprintf(stderr,"##1st %s %d %d %d\n",seg1.chr.c_str(),seg1.beg,seg1.en,seg1.strand);
-    fprintf(stderr,"##2nd %s %d %d %d\n",seg2.chr.c_str(),seg2.beg,seg2.en,seg2.strand);
-    for (  int i = 0 ; i <= 10 ; i++)
-      fprintf(stderr,"%c",seq[i]);
-    fprintf(stderr,"\n");
-    for (  int i = 0 ; i <= 10 ; i++)
-      fprintf(stderr,"%c",seq2[i]);
-    fprintf(stderr,"\n\n");    
-  }
   
-
-  if ( seg1.strand == 2 || seg2.strand == 2 ) {
-
-  	strand_test++;
-  	if ( strand_test <= 15 ) {
-	  fprintf(stderr,"strand 1st %s %d %d %d\n",seg1.chr.c_str(),seg1.beg,seg1.en,seg1.strand);
-	  fprintf(stderr,"strand 2nd %s %d %d %d\n",seg2.chr.c_str(),seg2.beg,seg2.en,seg2.strand);
-  		fprintf(stderr,"%d ",seg1.strand);
-  		for ( int i = 0 ; i <= min ( 20, len_of_first ) ; i++ )
-		  fprintf(stderr,"%c",seq[i]);
-  		fprintf(stderr,"\n%d ",seg2.strand);
-  		for ( int i = 0 ; i <= min (20, len_of_second) ; i++ )
-		  fprintf(stderr,"%c",seq2[i]);
-  		fprintf(stderr,"\n\n");
-  	}
-  }
-  */
-  
-  // STRAAAAAAAAAAAANNNNNNNNNDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
   for ( int i = 0 ; i < min (len_of_first, len_of_second) ; i++ )
- 		if ( seq[i] == seq2[i] ) { // STRANDLA ALAKALI BISILER EKSIKKKKKKKK!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ 		if ( seq[i] == seq2[i] ) { 
  			set < segment > :: iterator it;
  			segment tmp ( seg1.chr, seg1.beg + aft + i , seg1.beg + aft + i, 0 );
  			it = suns.find ( tmp );
@@ -235,93 +148,6 @@ void compare ( segment seg1, segment seg2, int aft, int len ) {
 
   free (seq);
   free (seq2);
-
-  // const int MAXX = (int) 2e9;
-  /*
-  for ( int i = 0 ; i < dupl.size() ; i++ ) {
-
-    if ( rnd1.size() > MAXX || rnd2.size() > MAXX ) break;
-    if ( dupl[i][0].size() > 5 || dupl[i][6].size() > 5 ) continue;
-    
-    vector < string > cur = dupl[i];
-    int len, len2, len3, id;
-    
-    id = atoi ( cur[10].c_str() );
-    if ( used[id] == true ) continue;
-    used[id] = true;
-    
-    char *seq = faidx_fetch_seq ( ref_fai , cur[0].c_str() , atoi(cur[1].c_str()), atoi(cur[2].c_str()),  &len );
-    char *seq2 = faidx_fetch_seq ( ref_fai , cur[6].c_str() , atoi(cur[7].c_str()), atoi(cur[8].c_str()),  &len2 );
-    char *seq3 = faidx_fetch_seq ( ref_fai , cur[0].c_str() , atoi(cur[1].c_str()), atoi(cur[2].c_str()),  &len3 );
-
-    for ( int j = 0 ; j < len3 ; j++ )
-      seq3[j] = toupper ( seq3[j] );
-    for ( int j = 0 ; j < len3/2 ; j++ ) {
-      char tmpp = seq3[j];
-      seq3[j] = seq3[len3-j-1];
-      seq3[len3-j-1] = tmpp;
-    }
-    for ( int j = 0 ; j < len3 ; j++ ) {
-      if ( seq3[j] == 'N' ) continue;
-      if ( seq3[j] == 'A' ) seq3[j] = 'T';
-      else if ( seq3[j] == 'T' ) seq3[j] = 'A';
-      else if ( seq3[j] == 'G' ) seq3[j] = 'C';
-      else if ( seq3[j] == 'C' ) seq3[j] = 'G';
-    }
-
-    int chc = rand()%6;
-    if ( chc == 5 ) {
-      if ( rnd1.size() <= rnd2.size() ) {
-	fprintf(save,"%s\t%d\t%d\t%d\tchrRn1\t%d\t%s\t+\n",cur[0].c_str(),atoi(cur[1].c_str()), atoi(cur[2].c_str()),id,(int)rnd1.size(),cur[5].c_str());
-	for ( int j = 0 ; j < len3 ; j++ )
-	  rnd1.pb ( seq3[j] );
-      }
-      else {
-	fprintf(save,"%s\t%d\t%d\t%d\tchrRn2\t%d\t%s\t+\n",cur[0].c_str(),atoi(cur[1].c_str()), atoi(cur[2].c_str()),id,(int)rnd2.size(),cur[5].c_str());
-	for ( int j = 0 ; j < len3 ; j++ )
-	  rnd2.pb ( seq3[j] );
-      }
-    }
-    if ( chc == 0  || chc == 3 || chc == 4 ) {
-      fprintf(save,"%s\t%d\t%d\t%d\tchrRn1\t%d\t%s\t-\n",cur[0].c_str(),atoi(cur[1].c_str()), atoi(cur[2].c_str()),id,(int)rnd1.size(),cur[5].c_str());
-      fprintf(save,"%s\t%d\t%d\t%d\tchrRn2\t%d\t%s\t-\n",cur[6].c_str(),atoi(cur[7].c_str()), atoi(cur[8].c_str()),id,(int)rnd2.size(),cur[5].c_str());
-      for ( int j = 0 ; j < len ; j++ )
-	rnd1.pb ( seq[j] );
-      for ( int j = 0 ; j < len2 ; j++ )
-	rnd2.pb ( seq2[j] );
-    }
-    if ( chc == 1 ) {
-      if ( rnd1.size() <= rnd2.size() ) {
-	fprintf(save,"%s\t%d\t%d\t%d\tchrRn1\t%d\t%s\t-\n",cur[0].c_str(),atoi(cur[1].c_str()), atoi(cur[2].c_str()),id,(int)rnd1.size(),cur[5].c_str());
-	for ( int j = 0 ; j < len ; j++ )
-	  rnd1.pb ( seq[j] );
-      }
-      else {
-	fprintf(save,"%s\t%d\t%d\t%d\tchrRn2\t%d\t%s\t-\n",cur[0].c_str(),atoi(cur[1].c_str()), atoi(cur[2].c_str()),id,(int)rnd2.size(),cur[5].c_str());
-	for ( int j = 0 ; j < len ; j++ )
-	  rnd2.pb ( seq[j] );
-      }
-    }
-    if ( chc == 2 ) {
-      if ( rnd2.size() <= rnd1.size() ) {
-	fprintf(save,"%s\t%d\t%d\t%d\tchrRn2\t%d\t%s\t-\n",cur[6].c_str(),atoi(cur[7].c_str()), atoi(cur[8].c_str()),id,(int)rnd2.size(),cur[5].c_str());
-	for ( int j = 0 ; j < len2 ; j++ )
-	  rnd2.pb ( seq2[j] );
-      }
-      else {
-	fprintf(save,"%s\t%d\t%d\t%d\tchrRn1\t%d\t%s\t-\n",cur[6].c_str(),atoi(cur[7].c_str()), atoi(cur[8].c_str()),id,(int)rnd1.size(),cur[5].c_str());
-	for ( int j = 0 ; j < len2 ; j++ )
-	  rnd1.pb ( seq2[j] );
-      }
-    }
-    
-    free ( seq );
-    free ( seq2 );
-    free ( seq3 );
-  }
-  */
-  
-  
 }
 
 segment current_grp ( segment cur ) {
@@ -403,7 +229,36 @@ void find_suns () {
 }
 
 void print_suns () {
+  
+  for ( auto cur_segment: all_segments ) {
+    
+    int len;
+    char *seq = faidx_fetch_seq ( ref_fai, cur_segment.chr.c_str(), cur_segment.beg, cur_segment.en, &len );
 
+    vector < pair < segment, char > > suns_of_segment;
+    for ( int i = 0 ; i < len ; i++ ) {
+      char cur_nucl = toupper(seq[i]);
+      segment nucl ( cur_segment.chr, cur_segment.beg+i, cur_segment.beg+i, 0 );
+      if ( suns.find(nucl) != suns.end() )
+	suns_of_segment.pb ( make_pair ( nucl, cur_nucl ) );
+    }
+
+    if ( suns_of_segment.size() ) {
+      string tmp = "";
+      tmp = cur_segment.chr+":"+to_string(cur_segment.beg)+":"+to_string(cur_segment.en);
+      fprintf(save,"%s\t",tmp.c_str());
+      for ( int i = 0 ; i < suns_of_segment.size() ; i++ ) {
+	tmp = suns_of_segment[i].first.chr+":"+to_string(suns_of_segment[i].first.beg)+":"+suns_of_segment[i].sc;
+	fprintf(save,"%s",tmp.c_str());
+	if ( i != suns_of_segment.size()-1 )
+	  fprintf(save,"\t");
+	else
+	  fprintf(save,"\n");
+      }
+    }
+    
+    free(seq);
+  }
 }
 
 int main( int argc, char** argv ) {
@@ -428,16 +283,25 @@ int main( int argc, char** argv ) {
 
   fprintf(stderr,"#4 Finding suns\n");
   find_suns ();
-  fai_destroy ( ref_fai );
 
-  // STRAND HALLEDIP, PRINTLEME KALDI
   print_suns();
-
+  
+  fai_destroy ( ref_fai );
   fclose( save );
   return 0;
 }
 
 vector < pss > read_tab () {
+
+  map < string , bool > usable;
+  for ( int i = 1 ; i <= 22 ; i++ ) {
+    string tmp = "chr"+to_string(i);
+    usable[tmp] = true;
+  }
+
+  usable["chrX"] = true;
+  usable["chrY"] = true;
+  usable["chrM"] = true;
 
   vector < pss > ret;
   ifstream file(files.duplication_file);
@@ -471,6 +335,9 @@ vector < pss > read_tab () {
 				strand2 = 2;
       segment tmp1 (words[0],stoi(words[1]),stoi(words[2]),strand1);
       segment tmp2 (words[3],stoi(words[4]),stoi(words[5]),strand2);
+
+      if ( !usable[tmp1.chr] || !usable[tmp2.chr] )
+	continue;
 
       ret.pb ( make_pair(tmp1, tmp2) );
       all_segments.insert (tmp1);
