@@ -55,8 +55,8 @@ struct segment {
 };
 
 struct similar {
-	segment seg1, seg2;
-	int after_first, len;
+  segment seg1, seg2;
+  int after_first, len;
 };
 
 set < segment > all_segments, super_segments, suns;
@@ -130,102 +130,103 @@ void compare ( segment seg1, segment seg2, int aft, int len ) {
   char *seq2 = faidx_fetch_seq ( ref_fai, seg2.chr.c_str(), seg2.beg, seg2.beg+len-1, &len_of_second );
 
   if ( len_of_first != len_of_second )
-  	uneven_cnt++;
+    uneven_cnt++;
   
   for ( int i = 0 ; i < min (len_of_first, len_of_second) ; i++ )
- 		if ( seq[i] == seq2[i] ) { 
- 			set < segment > :: iterator it;
- 			segment tmp ( seg1.chr, seg1.beg + aft + i , seg1.beg + aft + i, 0 );
- 			it = suns.find ( tmp );
- 			if ( it != suns.end() )
- 				suns.erase (it);
-
- 			segment tmp2 ( seg2.chr, seg2.beg + i , seg2.beg + i, 0 );
- 			it = suns.find ( tmp2 );
- 			if ( it != suns.end() )
- 				suns.erase (it);
- 		}
-
+    if ( seq[i] == seq2[i] ) { 
+      set < segment > :: iterator it;
+      segment tmp ( seg1.chr, seg1.beg + aft + i , seg1.beg + aft + i, 0 );
+      it = suns.find ( tmp );
+      if ( it != suns.end() )
+	suns.erase (it);
+      
+      segment tmp2 ( seg2.chr, seg2.beg + i , seg2.beg + i, 0 );
+      it = suns.find ( tmp2 );
+      if ( it != suns.end() )
+	suns.erase (it);
+    }
+  
   free (seq);
   free (seq2);
 }
 
 segment current_grp ( segment cur ) {
-	if ( grp[cur] == cur )
-		return cur;
-	return grp[cur] = current_grp ( grp[cur] );
+  if ( grp[cur] == cur )
+    return cur;
+  return grp[cur] = current_grp ( grp[cur] );
 }
 
 void find_groups () {
-	for ( int i = 0 ; i < pairs.size() ; i++ ) {
-		if ( current_grp ( pairs[i].first ) == current_grp ( pairs[i].second ) )
-			continue;
-		grp[ grp[pairs[i].second] ] = grp[pairs[i].first];
-	}
-
-	for ( auto i: grp ) {
-		super_segments.insert ( i.second );
-		group_members[i.second].insert ( i.first );
-	}
+  for ( int i = 0 ; i < pairs.size() ; i++ ) {
+    if ( current_grp ( pairs[i].first ) == current_grp ( pairs[i].second ) )
+      continue;
+    grp[ grp[pairs[i].second] ] = grp[pairs[i].first];
+  }
+  
+  for ( auto i: grp ) {
+    super_segments.insert ( i.second );
+    group_members[i.second].insert ( i.first );
+  }
 }
 
 void find_variations () {
-	set < segment > :: iterator it, it2;
-	for ( it = all_segments.begin() ; it != all_segments.end() ; it++ ) {
-		it2 = it;
-		it2++;
-		for ( ; it2 != all_segments.end() ; it2++ ) {
-			if ( it2->chr.compare(it->chr) != 0 || (it2->beg) > (it->en) )
-				break;
-			int aft = (it2->beg) - (it->beg);
-			int lenn = min( it2->en, it->en ) - (it2->beg) + 1;
-			similar tmp;
-			tmp.seg1 = *it;
-			tmp.seg2 = *it2;
-			tmp.after_first = aft;
-			tmp.len = lenn;
-			similars.push_back ( tmp );
-		}
-	}
+  
+  set < segment > :: iterator it, it2;
+  for ( it = all_segments.begin() ; it != all_segments.end() ; it++ ) {
+    it2 = it;
+    it2++;
+    for ( ; it2 != all_segments.end() ; it2++ ) {
+      if ( it2->chr.compare(it->chr) != 0 || (it2->beg) > (it->en) )
+	break;
+      int aft = (it2->beg) - (it->beg);
+      int lenn = min( it2->en, it->en ) - (it2->beg) + 1;
+      similar tmp;
+      tmp.seg1 = *it;
+      tmp.seg2 = *it2;
+      tmp.after_first = aft;
+      tmp.len = lenn;
+      similars.push_back ( tmp );
+    }
+  }
 }
 
 void find_suns () {
 
-	fprintf(stderr,"Before deleting any, sun size = %d\n",(int)suns.size());
+  fprintf(stderr,"Before deleting any, sun size = %d\n",(int)suns.size());
 
-	for ( auto i: group_members ) {
-		set < segment > &cur_grp = i.second;
-		set < segment > :: iterator it, it2;
+  for ( auto i: group_members ) {
+    set < segment > &cur_grp = i.second;
+    set < segment > :: iterator it, it2;
 
-		for ( it = cur_grp.begin() ; it != cur_grp.end() ; it++ ) {
-			it2 = it;
-			it2++;
-			while ( it2 != cur_grp.end() ) {
-				compare ( *it, *it2, 0, min ( (it->en) - (it->beg) + 1, (it2->en) - (it2->beg) + 1 ) );
-				it2++;
-			}
-		}
-	}
+    for ( it = cur_grp.begin() ; it != cur_grp.end() ; it++ ) {
+      it2 = it;
+      it2++;
+      while ( it2 != cur_grp.end() ) {
+	compare ( *it, *it2, 0, min ( (it->en) - (it->beg) + 1, (it2->en) - (it2->beg) + 1 ) );
+	it2++;
+      }
+    }
+  }
 
-	fprintf(stderr,"After deleting inter-groups, sun size = %d\n",(int)suns.size());
+  fprintf(stderr,"After deleting inter-groups, sun size = %d\n",(int)suns.size());
 
-	for ( int i = 0 ; i < similars.size () ; i++ ) {
-		similar &tmp = similars[i];
+  for ( int i = 0 ; i < similars.size () ; i++ ) {
+    similar &tmp = similars[i];
 
-		segment sup1 = current_grp (tmp.seg1), sup2 = current_grp (tmp.seg2);
-		set < segment > &grp1 = group_members[sup1];
-		set < segment > &grp2 = group_members[sup2];
-		set < segment > :: iterator it, it2;
+    segment sup1 = current_grp (tmp.seg1), sup2 = current_grp (tmp.seg2);
+    set < segment > &grp1 = group_members[sup1];
+    set < segment > &grp2 = group_members[sup2];
+    set < segment > :: iterator it, it2;
 
-		for ( it = grp1.begin() ; it != grp1.end() ; it++ ) {
-			for ( it2 = grp2.begin() ; it2 != grp2.end() ; it2++ )
-				compare ( *it, *it2, tmp.after_first, tmp.len );
-		}
+    for ( it = grp1.begin() ; it != grp1.end() ; it++ ) {
+      for ( it2 = grp2.begin() ; it2 != grp2.end() ; it2++ )
+	compare ( *it, *it2, tmp.after_first, tmp.len );
+    }
 
-	}
+  }
 
-	fprintf(stderr,"After deleting variations, sun size = %d\n",(int)suns.size());
-	fprintf(stderr,"fai_fetch uneven length count = %d\n",uneven_cnt);
+  fprintf(stderr,"After deleting variations, sun size = %d\n",(int)suns.size());
+  fprintf(stderr,"fai_fetch uneven length count = %d\n",uneven_cnt);
 }
 
 void print_suns () {
@@ -315,24 +316,24 @@ vector < pss > read_tab () {
       int st,en,i = -1;
 
       while ( i != line.size() ) {
-				string tmp;
-				for ( i++ ; i != line.size() ; i++ ) {
-				  if ( line[i] == '\t' || line[i] == ' ' || line[i] == '\n' ) break;
-				  tmp += line[i];
-				}
-				words.pb ( tmp );
+	string tmp;
+	for ( i++ ; i != line.size() ; i++ ) {
+	  if ( line[i] == '\t' || line[i] == ' ' || line[i] == '\n' ) break;
+	  tmp += line[i];
+	}
+	words.pb ( tmp );
       }
 
       int strand1 = 0, strand2 = 0;
       if ( words[8].compare("+") == 0 )
-				strand1 = 1;
+	strand1 = 1;
       if ( words[8].compare("-") == 0 )
-				strand1 = 2;
+	strand1 = 2;
 
       if ( words[9].compare("+") == 0 )
-				strand2 = 1;
+	strand2 = 1;
       if ( words[9].compare("-") == 0 )
-				strand2 = 2;
+	strand2 = 2;
       segment tmp1 (words[0],stoi(words[1]),stoi(words[2]),strand1);
       segment tmp2 (words[3],stoi(words[4]),stoi(words[5]),strand2);
 
